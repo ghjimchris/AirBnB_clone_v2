@@ -1,31 +1,40 @@
 #!/usr/bin/python3
-"""create fabfile"""
-from fabric.api import put, run, env
-from fabric.contrib import files
+""" Function that compress a folder """
+from datetime import datetime
+from fabric.api import *
+import shlex
 import os
 
-env.hosts = ['3.80.18.91', '52.7.244.247]
+
+env.hosts = ['35.231.33.237', '34.74.155.163']
+env.user = "ubuntu"
 
 
 def do_deploy(archive_path):
-    """deploy function"""
+    """ Deploys """
     if not os.path.exists(archive_path):
         return False
-
-    data_path = '/data/web_static/releases/'
-    temp = archive_path.split('.')[0]
-    file_name = temp.split('/')[1]
-    dest = data_path + file_name
-
     try:
-        put(archive_path, '/tmp')
-        run('sudo mkdir -p {}'.format(dest))
-        run('sudo tar -xzf /tmp/{}.tgz -C {}'.format(file_name, dest))
-        run('sudo rm -f /tmp/{}.tgz'.format(file_name))
-        run('sudo mv {}/web_static/* {}/'.format(dest, dest))
-        run('sudo rm -rf {}/web_static/'.format(dest))
-        run('sudo rm -rf /data/web_static/current')
-        run('sudo ln -s {} /data/web_static/current'.format(dest))
+        name = archive_path.replace('/', ' ')
+        name = shlex.split(name)
+        name = name[-1]
+
+        wname = name.replace('.', ' ')
+        wname = shlex.split(wname)
+        wname = wname[0]
+
+        releases_path = "/data/web_static/releases/{}/".format(wname)
+        tmp_path = "/tmp/{}".format(name)
+
+        put(archive_path, "/tmp/")
+        run("mkdir -p {}".format(releases_path))
+        run("tar -xzf {} -C {}".format(tmp_path, releases_path))
+        run("rm {}".format(tmp_path))
+        run("mv {}web_static/* {}".format(releases_path, releases_path))
+        run("rm -rf {}web_static".format(releases_path))
+        run("rm -rf /data/web_static/current")
+        run("ln -s {} /data/web_static/current".format(releases_path))
+        print("New version deployed!")
         return True
-    except RuntimeError:
+    except:
         return False
